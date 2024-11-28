@@ -3,6 +3,8 @@ from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from django.shortcuts import get_object_or_404
+from drf_yasg.utils import swagger_auto_schema
+from drf_yasg import openapi
 
 from .models import Level, Question, Option
 from .serializers import LevelSerializer
@@ -16,6 +18,22 @@ class LevelsView(ListAPIView):
 
 
 class GetQuizView(APIView):
+    @swagger_auto_schema(
+        manual_parameters=[
+            openapi.Parameter(
+                'Telegram-Id', openapi.IN_HEADER,
+                description="Telegram user ID",
+                type=openapi.TYPE_STRING,
+                required=True
+            ),
+            openapi.Parameter(
+                'Level', openapi.IN_HEADER,
+                description="Level ID",
+                type=openapi.TYPE_NUMBER,
+                required=True
+            ),
+        ]
+    )
     def get(self, request):
 
         telegram_id = request.headers.get('Telegram-Id')
