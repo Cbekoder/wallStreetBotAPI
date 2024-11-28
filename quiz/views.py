@@ -16,8 +16,16 @@ class LevelsView(ListAPIView):
 
 
 class GetQuizView(APIView):
-    def get(self, request, level):
+    def get(self, request):
+
+        telegram_id = request.headers.get('Telegram-Id')
+        level = request.headers.get('Level')
+
         level_instance = get_object_or_404(Level, pk=level)
+
+        if not telegram_id or not level:
+            return Response({"error": "Telegram-Id and Level headers are required"}, status=status.HTTP_400_BAD_REQUEST)
+
 
         questions = Question.objects.filter(level=level_instance).order_by("?")[:20]
 
@@ -34,7 +42,7 @@ class GetQuizView(APIView):
             quiz_data["questions"].append({
                 "question_id": question.id,
                 "question": question.text,
-                "options": [{"id": option.id, "text": option.text} for option in options_list]
+                "options": [{"id": option.id, "text": option.text, "is_correct": option.is_correct} for option in options_list]
             })
 
         return Response(quiz_data, status=status.HTTP_200_OK)

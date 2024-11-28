@@ -26,7 +26,7 @@ load_dotenv()
 SECRET_KEY = os.getenv("SECRET_KEY")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv("DEBUG")
+DEBUG = os.getenv("DEBUG", default=False)
 
 ALLOWED_HOSTS = ["*"]
 
@@ -77,6 +77,9 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
+SWAGGER_SETTINGS = {
+   'SECURITY_DEFINITIONS': None
+}
 
 # Database
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
@@ -125,9 +128,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 if DEBUG:
-    STATICFILES_DIRS = [
-        BASE_DIR / "static",
-    ]
+    STATICFILES_DIRS = [ BASE_DIR / "static" ]
 else:
     STATIC_ROOT = BASE_DIR / "static"
 
