@@ -6,7 +6,7 @@ from rest_framework import status
 
 from quiz.models import Level
 from .models import MemberResults, Members
-from .serializers import MemberResultsSerializer, MemberRegistrationSerializer
+from .serializers import MemberResultsSerializer, MemberRegistrationSerializer, MemberResultsGetSerializer
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from django.shortcuts import get_object_or_404
@@ -75,5 +75,5 @@ class MemberResultsView(APIView):
         telegram_id = request.query_params.get('telegram_id')
         member = get_object_or_404(Members, telegram_id=telegram_id)
         results = MemberResults.objects.filter(member=member).order_by('-created_at')
-        serializer = MemberResultsSerializer(results, many=True)
+        serializer = MemberResultsGetSerializer(results, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)

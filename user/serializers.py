@@ -19,3 +19,15 @@ class MemberResultsSerializer(serializers.ModelSerializer):
         model = MemberResults
         fields = ['id', 'member', 'level', 'amount', 'score', 'created_at']
         read_only_fields = ['id', 'created_at']
+
+
+class MemberResultsGetSerializer(serializers.ModelSerializer):
+    level = serializers.SerializerMethodField()
+
+    class Meta:
+        model = MemberResults
+        fields = ['id', 'level', 'amount', 'score', 'created_at']
+        read_only_fields = ['id', 'created_at']
+
+    def get_level(self, obj):
+        return obj.level.name if obj.level else None
