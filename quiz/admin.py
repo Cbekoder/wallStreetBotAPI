@@ -4,8 +4,8 @@ from .models import Level, Question, Option
 # Inline for Options within a Question
 class OptionInline(admin.TabularInline):
     model = Option
-    extra = 3  # Show 3 empty option forms by default
-    max_num = 10  # Limit the maximum number of options to 10
+    extra = 4  # Show 3 empty option forms by default
+    max_num = 4  # Limit the maximum number of options to 10
 
 @admin.register(Level)
 class LevelAdmin(admin.ModelAdmin):
