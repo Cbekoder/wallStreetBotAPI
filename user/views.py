@@ -3,6 +3,8 @@ from rest_framework.generics import CreateAPIView
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
+
+from quiz.models import Level
 from .models import MemberResults, Members
 from .serializers import MemberResultsSerializer, MemberRegistrationSerializer
 from drf_yasg.utils import swagger_auto_schema
@@ -36,16 +38,33 @@ class CheckPhoneNumberAPIView(APIView):
         else:
             return Response({"error": "Phone number is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-class SaveResultView(CreateAPIView):
-    queryset = MemberResults.objects.all()
-    serializer_class = MemberResultsSerializer
+
+class SaveResultView(APIView):
+    @swagger_auto_schema(
+        operation_summary="Create a new Member Result",
+        operation_description="Accepts member, level, amount, and score to create a new MemberResult.",
+        request_body=MemberResultsSerializer,
+        responses={
+            201: MemberResultsSerializer,
+            400: "Bad Request"
+        }
+    )
+    def post(self, request):
+        member_id = request.data.get('member')
+        level_id = request.data.get('level')
+        score = request.data.get('score')
+        amount = request.data.get('amount')
+        member = get_object_or_404(Members, telegram_id=member_id)
+        level = get_object_or_404(Level, pk=level_id)
+        result = MemberResults.objects.create(member=member, level=level, score=score, amount=amount)
+        return Response(MemberResultsSerializer(result).data, status=status.HTTP_200_OK)
 
 
 class MemberResultsView(APIView):
     @swagger_auto_schema(
         manual_parameters=[
             openapi.Parameter(
-                'Telegram-Id', openapi.IN_QUERY,
+                'telegram_id', openapi.IN_QUERY,
                 description="Telegram user ID",
                 type=openapi.TYPE_STRING,
                 required=True
@@ -53,7 +72,8 @@ class MemberResultsView(APIView):
         ]
     )
     def get(self, request):
-        telegram_id = request.query_params.get('Telegram-Id')
-        results = MemberResults.objects.filter(member_id=telegram_id).order_by('-created_at')
+        telegram_id = request.query_params.get('telegram_id')
+        member = get_object_or_404(Members, telegram_id=telegram_id)
+        results = MemberResults.objects.filter(member=member).order_by('-created_at')
         serializer = MemberResultsSerializer(results, many=True)
         return Response(serializer.data, status=status.HTTP_200_OK)
