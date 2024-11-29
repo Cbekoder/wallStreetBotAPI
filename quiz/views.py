@@ -36,8 +36,8 @@ class GetQuizView(APIView):
         ]
     )
     def get(self, request):
-        level_id = request.query_params.get('level')
-        amount = request.query_params.get("amount")
+        level_id = int(request.query_params.get('level'))
+        amount = int(request.query_params.get("amount"))
         amount = amount if 0 <= amount <= 50 else 50
 
         if not level_id:
