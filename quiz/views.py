@@ -36,37 +36,29 @@ class GetQuizView(APIView):
         ]
     )
     def get(self, request):
-        telegram_id = request.query_params.get('telegram_id')
         level_id = request.query_params.get('level')
-        print(telegram_id, level_id)
 
-        if not telegram_id or not level_id:
+        if not level_id:
             return Response({"error": "telegram_id and level headers are required"}, status=status.HTTP_400_BAD_REQUEST)
 
         level = get_object_or_404(Level, pk=level_id)
-        member = get_object_or_404(Members, telegram_id=telegram_id)
-        if member:
-            questions = Question.objects.filter(level=level).order_by("?")[:20]
-            quiz_data = {
-                "level": level.name,
-                "questions": []
-            }
-            for question in questions:
-                options = Option.objects.filter(question=question)
-                options_list = list(options)
-                random.shuffle(options_list)
 
-                quiz_data["questions"].append({
-                    "question_id": question.id,
-                    "question": question.text,
-                    "options": [{"id": option.id, "text": option.text, "is_correct": option.is_correct} for option in options_list]
-                })
-            MemberResults.objects.create(
-                member=member,
-                level=level,
-                questions=quiz_data['questions']
-            )
-            return Response(quiz_data, status=status.HTTP_200_OK)
+        questions = Question.objects.filter(level=level).order_by("?")[:20]
+        quiz_data = {
+            "level": level.name,
+            "questions": []
+        }
+        for question in questions:
+            options = Option.objects.filter(question=question)
+            options_list = list(options)
+            random.shuffle(options_list)
+
+            quiz_data["questions"].append({
+                "question_id": question.id,
+                "question": question.text,
+                "options": [{"id": option.id, "text": option.text, "is_correct": option.is_correct} for option in options_list]
+            })
+        return Response(quiz_data, status=status.HTTP_200_OK)
 
 
 class CheckAnswersView(APIView):
