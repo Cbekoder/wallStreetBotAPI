@@ -22,7 +22,7 @@ class MemberResults(models.Model):
     member = models.ForeignKey(Members, on_delete=models.CASCADE)
     level = models.ForeignKey(Level, on_delete=models.SET_NULL, null=True)
     questions = models.JSONField()
-    score = models.IntegerField(default=0)
+    score = models.IntegerField(null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

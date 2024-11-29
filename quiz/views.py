@@ -6,7 +6,7 @@ from django.shortcuts import get_object_or_404
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
-from user.models import Members
+from user.models import Members, MemberResults
 from .models import Level, Question, Option
 from .serializers import LevelSerializer
 import random
@@ -22,13 +22,13 @@ class GetQuizView(APIView):
     @swagger_auto_schema(
         manual_parameters=[
             openapi.Parameter(
-                'telegram_id', openapi.IN_HEADER,
+                'telegram_id', openapi.IN_QUERY,
                 description="Telegram user ID",
                 type=openapi.TYPE_STRING,
                 required=True
             ),
             openapi.Parameter(
-                'level', openapi.IN_HEADER,
+                'level', openapi.IN_QUERY,
                 description="Level ID",
                 type=openapi.TYPE_NUMBER,
                 required=True
@@ -36,17 +36,19 @@ class GetQuizView(APIView):
         ]
     )
     def get(self, request):
-        telegram_id = request.headers.get('telegram_id')
-        level = request.headers.get('level')
-        level_instance = get_object_or_404(Level, pk=level)
+        telegram_id = request.query_params.get('telegram_id')
+        level_id = request.query_params.get('level')
+        print(telegram_id, level_id)
 
-        if not telegram_id or not level:
+        if not telegram_id or not level_id:
             return Response({"error": "telegram_id and level headers are required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        level = get_object_or_404(Level, pk=level_id)
         member = get_object_or_404(Members, telegram_id=telegram_id)
         if member:
-            questions = Question.objects.filter(level=level_instance).order_by("?")[:20]
+            questions = Question.objects.filter(level=level).order_by("?")[:20]
             quiz_data = {
-                "level": level_instance.name,
+                "level": level.name,
                 "questions": []
             }
             for question in questions:
@@ -59,8 +61,13 @@ class GetQuizView(APIView):
                     "question": question.text,
                     "options": [{"id": option.id, "text": option.text, "is_correct": option.is_correct} for option in options_list]
                 })
-
+            MemberResults.objects.create(
+                member=member,
+                level=level,
+                questions=quiz_data['questions']
+            )
             return Response(quiz_data, status=status.HTTP_200_OK)
+
 
 class CheckAnswersView(APIView):
     def post(self, request):
@@ -69,11 +76,21 @@ class CheckAnswersView(APIView):
         correct_answers = 0
         total_questions = len(user_answers)
 
+        if not telegram_id:
+            return Response(
+                {"error": "telegram_id is required."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         if total_questions == 0:
             return Response(
                 {"error": "No answers provided."},
                 status=status.HTTP_400_BAD_REQUEST
             )
+
+        member = get_object_or_404(Members, telegram_id=telegram_id)
+
+        questions_data = []
 
         for answer in user_answers:
             question_id = answer.get('question_id')
@@ -89,8 +106,15 @@ class CheckAnswersView(APIView):
                 question = Question.objects.get(id=question_id)
                 selected_option = Option.objects.get(id=selected_option_id, question=question)
 
-                if selected_option.is_correct:
+                is_correct = selected_option.is_correct
+                if is_correct:
                     correct_answers += 1
+
+                questions_data.append({
+                    "question_id": question_id,
+                    "selected_option_id": selected_option_id,
+                    "is_correct": is_correct
+                })
 
             except Question.DoesNotExist:
                 return Response(
@@ -105,10 +129,19 @@ class CheckAnswersView(APIView):
 
         score = (correct_answers / total_questions) * 100
 
+        member_result = MemberResults.objects.create(
+            member=member,
+            level=level,
+            questions=questions_data,
+            score=score
+        )
+
         return Response({
             "telegram_id": telegram_id,
+            "level_id": level_id,
             "correct_answers": correct_answers,
             "total_questions": total_questions,
-            "score": score
+            "score": score,
+            "result_id": member_result.id
         }, status=status.HTTP_200_OK)
 
