@@ -36,6 +36,10 @@ class CheckPhoneNumberAPIView(APIView):
         else:
             return Response({"error": "Phone number is required"}, status=status.HTTP_400_BAD_REQUEST)
 
+class SaveResultView(CreateAPIView):
+    queryset = MemberResults.objects.all()
+    serializer_class = MemberResultsSerializer
+
 
 class MemberResultsView(APIView):
     @swagger_auto_schema(

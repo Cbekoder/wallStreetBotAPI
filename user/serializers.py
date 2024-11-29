@@ -17,5 +17,5 @@ class MemberRegistrationSerializer(serializers.ModelSerializer):
 class MemberResultsSerializer(serializers.ModelSerializer):
     class Meta:
         model = MemberResults
-        fields = ['id', 'member', 'level', 'questions', 'score', 'created_at']
+        fields = ['id', 'member', 'level', 'amount', 'score', 'created_at']
         read_only_fields = ['id', 'created_at']

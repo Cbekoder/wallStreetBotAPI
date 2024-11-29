@@ -22,9 +22,9 @@ class GetQuizView(APIView):
     @swagger_auto_schema(
         manual_parameters=[
             openapi.Parameter(
-                'telegram_id', openapi.IN_QUERY,
-                description="Telegram user ID",
-                type=openapi.TYPE_STRING,
+                'amount', openapi.IN_QUERY,
+                description="Question amount",
+                type=openapi.TYPE_NUMBER,
                 required=True
             ),
             openapi.Parameter(
@@ -37,13 +37,15 @@ class GetQuizView(APIView):
     )
     def get(self, request):
         level_id = request.query_params.get('level')
+        amount = request.query_params.get("amount")
+        amount = amount if 0 <= amount <= 50 else 50
 
         if not level_id:
             return Response({"error": "telegram_id and level headers are required"}, status=status.HTTP_400_BAD_REQUEST)
 
         level = get_object_or_404(Level, pk=level_id)
 
-        questions = Question.objects.filter(level=level).order_by("?")[:20]
+        questions = Question.objects.filter(level=level).order_by("?")[:amount]
         quiz_data = {
             "level": level.name,
             "questions": []
@@ -60,80 +62,4 @@ class GetQuizView(APIView):
             })
         return Response(quiz_data, status=status.HTTP_200_OK)
 
-
-class CheckAnswersView(APIView):
-    def post(self, request):
-        telegram_id = request.data.get('telegram_id')
-        user_answers = request.data.get('answers', [])
-        correct_answers = 0
-        total_questions = len(user_answers)
-
-        if not telegram_id:
-            return Response(
-                {"error": "telegram_id is required."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        if total_questions == 0:
-            return Response(
-                {"error": "No answers provided."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
-
-        member = get_object_or_404(Members, telegram_id=telegram_id)
-
-        questions_data = []
-
-        for answer in user_answers:
-            question_id = answer.get('question_id')
-            selected_option_id = answer.get('selected_option_id')
-
-            if not question_id or not selected_option_id:
-                return Response(
-                    {"error": f"Invalid data for question_id: {question_id}."},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-
-            try:
-                question = Question.objects.get(id=question_id)
-                selected_option = Option.objects.get(id=selected_option_id, question=question)
-
-                is_correct = selected_option.is_correct
-                if is_correct:
-                    correct_answers += 1
-
-                questions_data.append({
-                    "question_id": question_id,
-                    "selected_option_id": selected_option_id,
-                    "is_correct": is_correct
-                })
-
-            except Question.DoesNotExist:
-                return Response(
-                    {"error": f"Question with id {question_id} not found."},
-                    status=status.HTTP_404_NOT_FOUND
-                )
-            except Option.DoesNotExist:
-                return Response(
-                    {"error": f"Option with id {selected_option_id} not found for question {question_id}."},
-                    status=status.HTTP_404_NOT_FOUND
-                )
-
-        score = (correct_answers / total_questions) * 100
-
-        member_result = MemberResults.objects.create(
-            member=member,
-            level=level,
-            questions=questions_data,
-            score=score
-        )
-
-        return Response({
-            "telegram_id": telegram_id,
-            "level_id": level_id,
-            "correct_answers": correct_answers,
-            "total_questions": total_questions,
-            "score": score,
-            "result_id": member_result.id
-        }, status=status.HTTP_200_OK)
 

@@ -21,8 +21,8 @@ class Members(models.Model):
 class MemberResults(models.Model):
     member = models.ForeignKey(Members, on_delete=models.CASCADE)
     level = models.ForeignKey(Level, on_delete=models.SET_NULL, null=True)
-    questions = models.JSONField()
-    score = models.IntegerField(null=True)
+    amount = models.PositiveSmallIntegerField()
+    score = models.PositiveSmallIntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
