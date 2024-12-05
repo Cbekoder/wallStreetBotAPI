@@ -1,5 +1,12 @@
+from email.headerregistry import Group
+
 from django.contrib import admin
 from .models import Channels, Channel
+from django.contrib.auth.models import Group, User
+
+
+admin.site.unregister(Group)
+admin.site.unregister(User)
 
 class ChannelInline(admin.TabularInline):
     model = Channel
